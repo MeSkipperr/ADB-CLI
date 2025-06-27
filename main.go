@@ -297,21 +297,26 @@ func runADBCommand(command string, devices []models.DeviceType) (error) {
 
 
 	for _, device := range devices {
-		if device.Error {
-			continue
-		}
-		cmd := FillTemplate(command, map[string]string{
+
+		data := map[string]string{
 			"adbPath": conf.AdbPath,
 			"ip":      device.IPAddress,
 			"port":    fmt.Sprintf("%d", conf.AdbPort),
-		})
-
-		output, err := RunCommand(cmd)
-		if err != nil {
-			fmt.Printf("Error on %s: %v", device.Name, err)
+		}
+		connectOutput, errCon := RunCommand(FillTemplate(conf.AdbCommandTemplate["connect"], data))
+		if errCon != nil {
+			fmt.Printf("❌ Failed to connect to %s (%s): %v\n", device.Name, device.IPAddress, errCon)
+			fmt.Printf("↪️  Output: %s\n", connectOutput)
 			continue
 		}
-		fmt.Printf("Output from %s: %s", device.Name, output)
+
+		output, err := RunCommand(FillTemplate(command, data))
+		if err != nil {
+			fmt.Printf("❌ Error executing command on %s (%s): %v\n", device.Name, device.IPAddress, err)
+			continue
+		}
+
+		fmt.Printf("✅ Output from %s (%s):\n%s\n", device.Name, device.IPAddress, output)
 	}
 
 	return nil
