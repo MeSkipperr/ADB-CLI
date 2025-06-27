@@ -65,7 +65,7 @@ Through this terminal, you can access and control TV devices by room number usin
 ============================
 `
 	fmt.Println(message)
-	validRoom := regexp.MustCompile(`^[a-zA-Z0-9]+$`)
+	validRoom := regexp.MustCompile(`^[a-zA-Z0-9\s]+$`)
 	var roomNumbers []string
 	foundRooms := make(map[string]bool)
 	var typeRoomSelect string
@@ -86,8 +86,8 @@ Through this terminal, you can access and control TV devices by room number usin
 
 		info := `
 		📌 Enter room number(s):
-		• For a single room: e.g., 1001 or 1001B
-		• For multiple rooms: separate them with commas, e.g., 1001, 1002A, 1003B
+		• For a single room: e.g., 1001 or 1004 A
+		• For multiple rooms: separate them with commas, e.g., 1001, 1004 A, 1104 B
 		`
 
 		fmt.Println(info)
