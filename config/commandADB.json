@@ -1,0 +1,59 @@
+{
+    "adbPath": "resource/ADB/adb.exe",
+    "adbPort": 5555,
+    "verificationSteps":2,
+    "statusMessage":{
+        "CONNECTING"            : "Connecting",
+        "FAILED_CONNECT"        : "Cannot connect to device",
+        "FAILED_CLEAR"          : "Failed to clear YouTube data application",
+        "FAILED_UPTIME"         : "Failed to get uptime",
+        "SUCCESS"               : "Success",
+        "FAILED_REBOOT"         : "Failed to reboot system",
+        "UNAUTHORIZED"          : "Unauthorized device - Please allow ADB debugging"
+    },
+    "adbCommandTemplate":{
+        "kill"              : "{adbPath} kill-server",
+        "start"             : "{adbPath} start-server",
+        "connect"           : "{adbPath} connect {ip}:{port}",
+        "disconnect"        : "{adbPath} disconnect {ip}:{port}",
+        "clearData"         : "{adbPath} -s {ip}:{port} shell pm clear {package}",
+        "getUptime"         : "{adbPath} -s {ip}:{port} shell cat /proc/uptime",
+        "getDeviceInfo"     : "{adbPath} -s {ip}:{port} shell getprop ro.product.model",
+        "getDeviceSerial"   : "{adbPath} -s {ip}:{port} shell getprop ro.serialno",
+        "getDeviceId"       : "{adbPath} -s {ip}:{port} shell settings get secure android_id"
+    },
+    "adbListCommand": [
+        {
+            "title": "Reboot Device",
+            "command": "{adbPath} -s {ip}:{port} reboot"
+        },
+        {
+            "title": "Remove Data YouTube",
+            "command": "{adbPath} -s {ip}:{port} shell pm clear com.google.android.youtube.tv"
+        },
+        {
+            "title": "Enable YouTube",
+            "command": "{adbPath} -s {ip}:{port} shell pm enable com.google.android.youtube.tv"
+        },
+        {
+            "title": "Disable YouTube",
+            "command": "{adbPath} -s {ip}:{port} shell pm disable-user --user 0 com.google.android.youtube.tv"
+        },
+        {
+            "title": "Get Uptime",
+            "command": "{adbPath} -s {ip}:{port} shell cat /proc/uptime"
+        },
+        {
+            "title": "Get Device Information",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.product.model"
+        },
+        {
+            "title": "Get Device Serial",
+            "command": "{adbPath} -s {ip}:{port} shell getprop ro.serialno"
+        },
+        {
+            "title": "Get Device ID",
+            "command": "{adbPath} -s {ip}:{port} shell settings get secure android_id"
+        }
+    ]
+}
