@@ -129,7 +129,7 @@ Through this terminal, you can access and control TV devices by room number usin
 			args[i] = fmt.Sprintf("IPTV Room %s", v)
 		}
 
-		query := fmt.Sprintf("SELECT * FROM rooms WHERE type = Android TV & name IN (%s)", strings.Join(placeholders, ","))
+		query := fmt.Sprintf("SELECT * FROM devices WHERE type = 'Android TV' AND name IN (%s)", strings.Join(placeholders, ","))
 
 		rows, err := db.Query(query, args...)
 		if err != nil {
@@ -149,7 +149,7 @@ Through this terminal, you can access and control TV devices by room number usin
 				&d.Device,
 				&d.Error,
 				&d.Description,
-				&d.DownTime,
+				&d.DownTime ,
 				&d.Type,
 			)
 			if err != nil {
@@ -279,7 +279,7 @@ func getADBCommand() (bool, string) {
 }
 
 func runADBCommand(command string, devices []models.DeviceType) (error) {
-	conf, err := config.LoadJSON[models.AdbConfigType]("config/adb.json")
+	conf, err := config.LoadJSON[models.AdbConfigType]("config/commandADB.json")
 	if err != nil {
 		fmt.Println("Failed to load config from json", err)
 		return fmt.Errorf("failed to load config from json: %v", err)
