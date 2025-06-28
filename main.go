@@ -189,7 +189,7 @@ Through this terminal, you can access and control TV devices by room number usin
 		}
 		defer db.Close()
 
-		query := "SELECT * FROM rooms WHERE type = Android TV"
+		query := "SELECT * FROM devices WHERE type = 'Android TV' "
 
 		rows, err := db.Query(query)
 		if err != nil {
