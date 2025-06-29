@@ -129,7 +129,7 @@ Through this terminal, you can access and control TV devices by room number usin
 			args[i] = fmt.Sprintf("IPTV Room %s", v)
 		}
 
-		query := fmt.Sprintf("SELECT * FROM devices WHERE type = 'Android TV' AND name IN (%s)", strings.Join(placeholders, ","))
+		query := fmt.Sprintf("SELECT * FROM devices WHERE type = android_tv AND name IN (%s)", strings.Join(placeholders, ","))
 
 		rows, err := db.Query(query, args...)
 		if err != nil {
@@ -189,7 +189,7 @@ Through this terminal, you can access and control TV devices by room number usin
 		}
 		defer db.Close()
 
-		query := "SELECT * FROM devices WHERE type = 'Android TV' "
+		query := "SELECT * FROM devices WHERE type = android_tv "
 
 		rows, err := db.Query(query)
 		if err != nil {
