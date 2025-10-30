@@ -1,5 +1,6 @@
 {
     "adbPath": "resource/ADB/adb.exe",
+    "scrcpyPath": "resource/SCRCPY/scrcpy.exe",
     "adbPort": 5555,
     "verificationSteps":2,
     "statusMessage":{
@@ -23,6 +24,10 @@
         "getDeviceId"       : "{adbPath} -s {ip}:{port} shell settings get secure android_id"
     },
     "adbListCommand": [
+        {
+            "title": "Remote Screen",
+            "command": "{scrcpyPath} -s {ip}:{port} "
+        },
         {
             "title": "Reboot Device",
             "command": "{adbPath} -s {ip}:{port} reboot"
