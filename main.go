@@ -4,11 +4,13 @@ import (
 	"ADB-CLI/config"
 	"ADB-CLI/models"
 	"fmt"
+	"database/sql"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
+	"regexp"
 
 	_ "modernc.org/sqlite"
 
@@ -48,6 +50,173 @@ func FillTemplate(template string, values map[string]string) string {
 		template = strings.ReplaceAll(template, "{"+key+"}", val)
 	}
 	return template
+}
+
+func selectRoomNumber() ([]models.DeviceType, bool) {
+	clearTerminal()
+
+	message := `
+============================
+TV Control Terminal 
+
+Through this terminal, you can access and control TV devices by room number using ADB commands.
+============================
+`
+	fmt.Println(message)
+	validRoom := regexp.MustCompile(`^[a-zA-Z0-9\s]+$`)
+	var roomNumbers []string
+	foundRooms := make(map[string]bool)
+	var typeRoomSelect string
+
+	typeRoomSelectPromtn := &survey.Select{
+		Message: "Do you want to target one/multiple rooms or all rooms?",
+		Options: []string{"Single or Multiple Rooms", "All Rooms"},
+	}
+
+	err := survey.AskOne(typeRoomSelectPromtn, &typeRoomSelect)
+	if err != nil {
+		fmt.Println("Error selecting option:", err)
+		return nil, true
+	}
+
+	if typeRoomSelect == "Single or Multiple Rooms" {
+		var roomStringValue string
+
+		info := `
+		📌 Enter room number(s):
+		• For a single room: e.g., 1001 or 1004 A
+		• For multiple rooms: separate them with commas, e.g., 1001, 1004 A, 1104 B
+		`
+
+		fmt.Println(info)
+
+		survey.AskOne(&survey.Input{
+			Message: "Enter Room Number(s):",
+		}, &roomStringValue)
+
+		raw := strings.Split(roomStringValue, ",")
+
+		for _, r := range raw {
+			room := strings.TrimSpace(r)
+			if room != "" {
+				if !validRoom.MatchString(room) {
+					fmt.Printf("❌ Invalid room format: %s (only letters and numbers allowed)\n", room)
+					return nil, true
+				}
+				roomNumbers = append(roomNumbers, room)
+			}
+		}
+
+		if len(roomNumbers) == 0 {
+			fmt.Println("❌ No valid room numbers provided. Please try again.")
+			return nil, true
+		}
+
+		db, err := sql.Open("sqlite", "file:./resource/app.db")
+		if err != nil {
+			fmt.Printf("❌ Error opening database: %v\n", err)
+			panic(err)
+		}
+		defer db.Close()
+
+		placeholders := make([]string, len(roomNumbers))
+		args := make([]interface{}, len(roomNumbers))
+
+		for i, v := range roomNumbers {
+			placeholders[i] = "?"
+			args[i] = fmt.Sprintf("IPTV Room %s", v)
+		}
+
+		query := fmt.Sprintf("SELECT * FROM devices WHERE type = 'android_tv' AND name IN (%s)", strings.Join(placeholders, ","))
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			fmt.Printf("❌ Error querying database: %v\n", err)
+			return nil, true
+		}
+		defer rows.Close()
+
+		devices := []models.DeviceType{}
+
+		for rows.Next() {
+			var d models.DeviceType
+			err := rows.Scan(
+				&d.ID,
+				&d.Name,
+				&d.IPAddress,
+				&d.Device,
+				&d.Error,
+				&d.Description,
+				&d.DownTime ,
+				&d.Type,
+			)
+			if err != nil {
+				panic(err)
+			}
+			devices = append(devices, d)
+
+			for _, rn := range roomNumbers {
+				if d.Name == fmt.Sprintf("IPTV Room %s", rn) {
+					foundRooms[rn] = true
+					break
+				}
+			}
+		}
+
+		fmt.Println("✅ Rooms found in the database:")
+
+		found := false
+		for _, rn := range roomNumbers {
+			if foundRooms[rn] {
+				fmt.Println("-", rn)
+				found = true
+			}
+		}
+
+		if !found {
+			fmt.Println("⚠️ No matching rooms found in the database.")
+			return nil, true
+		}
+
+		return devices, false
+	} else {
+		db, err := sql.Open("sqlite", "file:./resource/app.db")
+		if err != nil {
+			fmt.Printf("❌ Error opening database: %v\n", err)
+			panic(err)
+		}
+		defer db.Close()
+
+		query := "SELECT * FROM devices WHERE type = 'android_tv' "
+
+		rows, err := db.Query(query)
+		if err != nil {
+			fmt.Printf("❌ Error querying database: %v\n", err)
+			return nil, true
+		}
+		defer rows.Close()
+
+		devices := []models.DeviceType{}
+
+		for rows.Next() {
+			var d models.DeviceType
+			err := rows.Scan(
+				&d.ID,
+				&d.Name,
+				&d.IPAddress,
+				&d.Device,
+				&d.Error,
+				&d.Description,
+				&d.DownTime,
+				&d.Type,
+			)
+			if err != nil {
+				panic(err)
+			}
+			devices = append(devices, d)
+		}
+		return devices, false
+	}
 }
 
 func getADBCommand() (bool, string) {
@@ -151,4 +320,48 @@ func runADBCommand(command string, devices []models.DeviceType) error {
 	}
 
 	return nil
+}
+
+
+func main() {
+	for {
+		var repeat string
+		roomNumber, err := selectRoomNumber()
+
+		if roomNumber == nil || err {
+			fmt.Println("❌ Exiting due to invalid input.")
+			survey.AskOne(&survey.Select{
+				Message: "Do you want to run the tool again?",
+				Options: []string{"Yes", "No"},
+			}, &repeat)
+			return
+		}
+
+		err, value := getADBCommand()
+		if err {
+			fmt.Println("❌ Error running ADB command:", value)
+			survey.AskOne(&survey.Select{
+				Message: "Do you want to run the tool again?",
+				Options: []string{"Yes", "No"},
+			}, &repeat)
+			return
+		}
+
+		fmt.Println(value)
+
+		errRunADB := runADBCommand(value, roomNumber )
+		if errRunADB != nil {
+			fmt.Println("❌ Error running ADB command:", err)
+		}
+
+		survey.AskOne(&survey.Select{
+			Message: "Do you want to run the tool again?",
+			Options: []string{"Yes", "No"},
+		}, &repeat)
+
+		if repeat == "No" {
+			fmt.Println("👋 Exiting. Thank you!")
+			break
+		}
+	}
 }
