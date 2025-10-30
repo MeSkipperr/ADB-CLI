@@ -54,7 +54,7 @@ func FillTemplate(template string, values map[string]string) string {
 	return template
 }
 
-func adbPathselectRoomNumber() ([]models.DeviceType, bool) {
+func selectRoomNumber() ([]models.DeviceType, bool) {
 	clearTerminal()
 
 	message := `
